@@ -25,7 +25,7 @@ class Freteclick extends CarrierModule
 
     public function __construct()
     {
-        $this->module_key = '787992febc148fba30e5885d08c14f8c';
+        $this->module_key = '787992febc148fba30e5885d08c14f8b';
         $this->cookie = new Cookie('Frete Click');
         $this->cookie->setExpire(time() + 20 * 60);
 

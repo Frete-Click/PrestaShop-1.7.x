@@ -1,4 +1,5 @@
 <?php
+require_once (dirname(__FILE__).'/vendor/autoload.php');
 
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManager;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;

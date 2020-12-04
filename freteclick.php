@@ -1,9 +1,9 @@
 <?php
-require_once(dirname(__FILE__).'./vendor/autoload.php');
+require_once(dirname(__FILE__).'/vendor/autoload.php');
 
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManager;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
-use freteclick\SDK;
+use SDK;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -1164,7 +1164,7 @@ class Freteclick extends CarrierModule
             return json_decode($response, false);
 
         } catch (\Exception $e) {
-            self::writeLog($e->getMessage());
+            //self::writeLog($e->getMessage());
         }
 
         return null;

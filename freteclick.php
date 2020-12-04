@@ -1,5 +1,4 @@
 <?php
-require_once (dirname(__FILE__).'/vendor/autoload.php');
 
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManager;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
@@ -25,13 +24,13 @@ class Freteclick extends CarrierModule
 
     public function __construct()
     {
-        $this->module_key = '787992febc148fba30e5885d08c14f8b';
+        $this->module_key = '787992febc148fba30e5885d08c14f8c';
         $this->cookie = new Cookie('Frete Click');
         $this->cookie->setExpire(time() + 20 * 60);
 
         $this->name = 'freteclick';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.0.1';
+        $this->version = '2.0.3';
         $this->author = 'Frete Click';
 
         $this->displayName = $this->l('Frete Click');
@@ -1163,7 +1162,7 @@ class Freteclick extends CarrierModule
             return json_decode($response, false);
 
         } catch (\Exception $e) {
-            self::writeLog($e->getMessage());
+            //self::writeLog($e->getMessage());
         }
 
         return null;

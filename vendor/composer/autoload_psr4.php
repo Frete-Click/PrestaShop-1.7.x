@@ -7,9 +7,8 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'SDK\\' => array($vendorDir . '/freteclick/sdk/src'),
-    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src'),
-    'Psr\\Http\\Client\\' => array($vendorDir . '/psr/http-client/src'),
-    'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
-    'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
+    'React\\Promise\\' => array($vendorDir . '/react/promise/src'),
+    'GuzzleHttp\\Stream\\' => array($vendorDir . '/guzzlehttp/streams/src'),
+    'GuzzleHttp\\Ring\\' => array($vendorDir . '/guzzlehttp/ringphp/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
 );

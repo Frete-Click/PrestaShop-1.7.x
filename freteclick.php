@@ -3,7 +3,6 @@ require_once(dirname(__FILE__).'/vendor/autoload.php');
 
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManager;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
-use SDK;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -23,6 +22,21 @@ class Freteclick extends CarrierModule
     public $url_add_quote_origin_company;
     public $cookie;
     protected static $error;
+
+    /**
+     * @var SDK\Service\API
+     */
+    public $API     = null;
+
+    /**
+     * @var SDK\Client\Address
+     */
+    public $Address = null;
+
+    /**
+     * @var SDK\Client\Quote
+     */
+    public $Quote   = null;
 
     public function __construct()
     {
@@ -88,8 +102,18 @@ class Freteclick extends CarrierModule
         $this->url_api_correios = '/calculador/CalcPrecoPrazo.asmx?WSDL';
         $this->url_add_quote_destination_client = '/sales/add-quote-destination-client.json';
         $this->url_add_quote_origin_company = '/sales/add-quote-origin-company.json.json';
+
+        $this->API     = new SDK\Service\API('https://api.freteclick.com.br', Configuration::get('FC_API_KEY'));
+        $this->Address = new SDK\Client\Address($this->API);
+        $this->Quote   = new SDK\Client\Quote($this->API);
     }
 
+    public function getAddressByPostalcode(string $postalcode): ?object
+    {
+        return $this->Address->getAddressByCEP(
+            preg_replace('/[^0-9]/', '', $postalcode)
+        );
+    }
 
     /**
      * Don't forget to create update methods if needed:
@@ -119,6 +143,7 @@ class Freteclick extends CarrierModule
             $this->registerHook('displayCarrierList') &&
             $this->registerHook('displayProductAdditionalInfo') &&
             $this->registerHook('displayShoppingCartFooter') &&
+            $this->registerHook('actionFrontControllerSetMedia') &&
             $this->registerHook('extraCarrier') &&
             $this->registerHook('OrderConfirmation') &&
             Configuration::updateValue('FC_INFO_PROD', 1) &&
@@ -161,7 +186,20 @@ class Freteclick extends CarrierModule
             $this->unregisterHook('extraCarrier') &&
             $this->unregisterHook('displayProductActions') &&
             $this->unregisterHook('OrderConfirmation') &&
-            $this->unregisterHook('displayShoppingCartFooter');
+            $this->unregisterHook('displayShoppingCartFooter') &&
+            $this->unregisterHook('actionFrontControllerSetMedia');
+    }
+
+    public function hookActionFrontControllerSetMedia()
+    {
+        $this->context->controller->registerStylesheet(
+            'freteclick-style',
+            $this->_path . 'views/css/front.css',
+            [
+                'media'    => 'all',
+                'priority' => 1000,
+            ]
+        );
     }
 
     /**
@@ -1050,33 +1088,47 @@ class Freteclick extends CarrierModule
     {
         try {
             session_start();
+
             $this->cookie->fc_cep = $data->destination->cep;
+
             $_SESSION['cep'] = $data->destination->cep;
-//            $this->cookie->fc_cep = Tools::getValue('cep');
 
             if (!isset($data->destination)) {
-                throw new Exception('Error!');
+                throw new Exception('Estão faltando os dados de destino');
             }
 
-            $destination = self::getAddressByCep($data->destination->cep);
+            $destination = $this->getAddressByPostalcode($data->destination->cep);
+            //$destination = self::getAddressByCep($data->destination->cep);
 
-            if (!isset($destination->response->data[0])) {
+            if ($destination === null) {
                 throw new Exception('Cep não encontrado!');
             }
 
-            $data->destination->city = $destination->response->data[0]->city;
-            $data->destination->country = $destination->response->data[0]->country;
-            $data->destination->state = $destination->response->data[0]->state;
+            $data->destination->city    = $destination->city;
+            $data->destination->country = $destination->country;
+            $data->destination->state   = $destination->state;
 
             if ($data->productType === '') {
                 $data->productType = 'Material de Escritório';
             }
 
-            $resp = self::getQuotes(Configuration::get('FC_API_KEY'), json_encode($data));
+            //$resp = self::getQuotes(Configuration::get('FC_API_KEY'), json_encode($data));
 
-            if (!isset($resp->id)) {
-                throw new Exception('Error!');
-            }
+            $resp = $this->Quote->simulate([
+                'origin'            => [
+                    'city'    => $data->origin->city,
+                    'country' => $data->origin->country,
+                    'state'   => $data->origin->state,
+                ],
+                'destination'       => [
+                    'city'    => $data->destination->city,
+                    'country' => $data->destination->country,
+                    'state'   => $data->destination->state,
+                ],
+                'productTotalPrice' => $data->productTotalPrice,
+                'packages'          => $data->packages,
+                'productType'       => $data->productType,
+            ]);
 
             $arrJson = $this->orderByPrice($resp);
 
@@ -1095,7 +1147,7 @@ class Freteclick extends CarrierModule
             foreach ($arrJson->quotes as $key => $quote) {
                 $quote_price = number_format($quote->total, 2, ',', '.');
                 $arrJson->quotes[$key]->raw_total = $quote->total;
-                $arrJson->quotes[$key]->total = "R$ {$quote_price}";
+                $arrJson->quotes[$key]->total     = "R$ {$quote_price}";
 
                 $count = 0;
                 foreach ($carriers as $carrier) {
@@ -1103,18 +1155,24 @@ class Freteclick extends CarrierModule
                         $count++;
                     }
                 }
-//                if ($count === 0) {
-//                    $quote->carrier->image = 'https://' . str_replace('api.', 'app.', $quote->carrier->image);
-
-//                    $this->addCarrier($quote->carrier->name, $quote->carrier->image);
-//                }
             }
 
             $this->cookie->fc_valorFrete = $arrJson->quotes[0]->raw_total;
-            return json_encode($arrJson);
 
-        } catch (Exception $ex) {
-            return json_encode(['response' => array('success' => false, 'error' => $ex->getMessage())]);
+            return json_encode([
+                'response' => [
+                    'success' => true,
+                    'data'    => $arrJson
+                ]
+            ]);
+        }
+        catch (Exception $ex) {
+            return json_encode([
+                'response' => [
+                    'success' => false,
+                    'error'   => $ex->getMessage()
+                ]
+            ]);
         }
     }
 

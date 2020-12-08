@@ -55,7 +55,6 @@ class FreteClick{
 
 	protected static function addError($error){
 		Error::addError($error);
-		return $this;
 	}
 
 	public static function getErrors(){

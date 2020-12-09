@@ -1,9 +1,14 @@
 {
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "16fc79a0a458f73b48b7fe75a2a12e47",
     "packages": [
         {
             "name": "freteclick/sdk",
             "version": "v1.2.11",
-            "version_normalized": "1.2.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Frete-Click/SDK.git",
@@ -18,9 +23,7 @@
             "require": {
                 "guzzlehttp/guzzle": "~5.0"
             },
-            "time": "2020-12-04T18:01:13+00:00",
             "type": "library",
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "SDK\\": "src/"
@@ -41,12 +44,11 @@
                 "issues": "https://github.com/Frete-Click/SDK/issues",
                 "source": "https://github.com/Frete-Click/SDK/tree/v1.2.11"
             },
-            "install-path": "../freteclick/sdk"
+            "time": "2020-12-04T18:01:13+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
             "version": "5.3.4",
-            "version_normalized": "5.3.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
@@ -67,9 +69,7 @@
                 "ext-curl": "*",
                 "phpunit/phpunit": "^4.0"
             },
-            "time": "2019-10-30T09:32:00+00:00",
             "type": "library",
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "GuzzleHttp\\": "src/"
@@ -101,12 +101,11 @@
                 "issues": "https://github.com/guzzle/guzzle/issues",
                 "source": "https://github.com/guzzle/guzzle/tree/5.3"
             },
-            "install-path": "../guzzlehttp/guzzle"
+            "time": "2019-10-30T09:32:00+00:00"
         },
         {
             "name": "guzzlehttp/ringphp",
             "version": "1.1.1",
-            "version_normalized": "1.1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/RingPHP.git",
@@ -130,14 +129,12 @@
             "suggest": {
                 "ext-curl": "Guzzle will use specific adapters if cURL is present"
             },
-            "time": "2018-07-31T13:22:33+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
                     "dev-master": "1.1-dev"
                 }
             },
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "GuzzleHttp\\Ring\\": "src/"
@@ -160,12 +157,11 @@
                 "source": "https://github.com/guzzle/RingPHP/tree/1.1.1"
             },
             "abandoned": true,
-            "install-path": "../guzzlehttp/ringphp"
+            "time": "2018-07-31T13:22:33+00:00"
         },
         {
             "name": "guzzlehttp/streams",
             "version": "3.0.0",
-            "version_normalized": "3.0.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/streams.git",
@@ -183,14 +179,12 @@
             "require-dev": {
                 "phpunit/phpunit": "~4.0"
             },
-            "time": "2014-10-12T19:18:40+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
                     "dev-master": "3.0-dev"
                 }
             },
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "GuzzleHttp\\Stream\\": "src/"
@@ -218,12 +212,11 @@
                 "source": "https://github.com/guzzle/streams/tree/master"
             },
             "abandoned": true,
-            "install-path": "../guzzlehttp/streams"
+            "time": "2014-10-12T19:18:40+00:00"
         },
         {
             "name": "react/promise",
             "version": "v2.8.0",
-            "version_normalized": "2.8.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/promise.git",
@@ -241,9 +234,7 @@
             "require-dev": {
                 "phpunit/phpunit": "^7.0 || ^6.5 || ^5.7 || ^4.8.36"
             },
-            "time": "2020-05-12T15:16:56+00:00",
             "type": "library",
-            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "React\\Promise\\": "src/"
@@ -271,9 +262,16 @@
                 "issues": "https://github.com/reactphp/promise/issues",
                 "source": "https://github.com/reactphp/promise/tree/v2.8.0"
             },
-            "install-path": "../react/promise"
+            "time": "2020-05-12T15:16:56+00:00"
         }
     ],
-    "dev": true,
-    "dev-package-names": []
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.0.0"
 }

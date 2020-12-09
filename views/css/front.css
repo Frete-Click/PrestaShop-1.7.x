@@ -1,3 +1,94 @@
 /**
 * 2007-2020 PrestaShop
 */
+
+.panel.panel-info {
+    padding         : 10px;
+    margin-top      : 15px;
+    background-color: #ffffff;
+    box-shadow      : -1px 0px 14px -3px rgba(0,0,0,0.75);
+-webkit-box-shadow  : -1px 0px 14px -3px rgba(0,0,0,0.75);
+    -moz-box-shadow : -1px 0px 14px -3px rgba(0,0,0,0.75);
+    border-radius   : 4px; 
+}
+
+.panel-heading,
+.panel-body,
+.response-error,
+.resultado-frete {
+    margin-top: 10px;
+}
+
+.panel-heading {
+    text-align    : center;
+    text-transform: uppercase;
+}
+
+.panel-body {
+    text-align: right;
+}
+
+.panel-body button {
+    margin-top: 10px;
+}
+
+.submit-button {
+    width: 100%;
+    cursor: pointer;
+	-moz-box-shadow:inset 0px 1px 0px 0px #54a3f7;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #54a3f7;
+	box-shadow:inset 0px 1px 0px 0px #54a3f7;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #007dc1), color-stop(1, #0061a7) );
+	background:-moz-linear-gradient( center top, #007dc1 5%, #0061a7 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#007dc1', endColorstr='#0061a7');
+	background-color:#007dc1;
+	-webkit-border-top-left-radius:3px;
+	-moz-border-radius-topleft:3px;
+	border-top-left-radius:3px;
+	-webkit-border-top-right-radius:3px;
+	-moz-border-radius-topright:3px;
+	border-top-right-radius:3px;
+	-webkit-border-bottom-right-radius:3px;
+	-moz-border-radius-bottomright:3px;
+	border-bottom-right-radius:3px;
+	-webkit-border-bottom-left-radius:3px;
+	-moz-border-radius-bottomleft:3px;
+	border-bottom-left-radius:3px;
+    text-indent:0;
+	border:1px solid #124d77;
+	display:inline-block;
+	color:#ffffff;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+    height:50px;
+	line-height:50px;
+	text-decoration:none;
+	text-align:center;
+	text-shadow:0px 1px 0px #154682;
+}
+
+.submit-button:hover {
+	background      : -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #0061a7), color-stop(1, #007dc1) );
+	background      : -moz-linear-gradient( center top, #0061a7 5%, #007dc1 100% );
+	filter          : progid:DXImageTransform.Microsoft.gradient(startColorstr='#0061a7', endColorstr='#007dc1');
+	background-color:#0061a7;
+}
+
+.submit-button:active {
+	position:relative;
+	top:1px;
+}
+
+.resultado-frete {
+    display         : none;
+}
+
+.response-error {
+    display         : none;
+    padding         : 10px;
+    background-color: #ffffe0;
+    color           : black;
+    text-align      : center;
+}

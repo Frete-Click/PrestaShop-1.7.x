@@ -1079,9 +1079,9 @@ class Freteclick extends CarrierModule
     {
         $arrProductsName = array();
         foreach ($this->context->cart->getProducts() as $product) {
-            $arrProductsName[] = $product['name'];
+            $arrProductsName[] = ucfirst(strtolower($product['category']));
         }
-        return implode(", ", $arrProductsName);
+        return implode(",", array_unique($arrProductsName));
     }
 
     public function quote($data)

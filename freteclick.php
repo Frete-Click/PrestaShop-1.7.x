@@ -1098,7 +1098,6 @@ class Freteclick extends CarrierModule
             }
 
             $destination = $this->getAddressByPostalcode($data->destination->cep);
-            //$destination = self::getAddressByCep($data->destination->cep);
 
             if ($destination === null) {
                 throw new Exception('CEP não encontrado');
@@ -1112,9 +1111,7 @@ class Freteclick extends CarrierModule
                 $data->productType = 'Material de Escritório';
             }
 
-            //$resp = self::getQuotes(Configuration::get('FC_API_KEY'), json_encode($data));
-
-            $resp = $this->Quote->simulate([
+            $resp = $this->getQuoteSimulation([
                 'origin'            => [
                     'city'    => $data->origin->city,
                     'country' => $data->origin->country,
@@ -1174,6 +1171,11 @@ class Freteclick extends CarrierModule
                 ]
             ]);
         }
+    }
+
+    public function getQuoteSimulation(array $data)
+    {
+        return $this->Quote->simulate($data);
     }
 
     public static function getQuotes($apiKey, $body)

@@ -24,7 +24,9 @@ class FreteClickGetOrderShippingCostController
             return 0;
         }
 
-        session_start();
+        if (!isset($_SESSION)) {
+            session_start();
+        }
 
         $address = new Address($cart->id_address_delivery);
         $cep = $address->postcode;

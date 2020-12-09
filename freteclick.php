@@ -1101,7 +1101,7 @@ class Freteclick extends CarrierModule
             //$destination = self::getAddressByCep($data->destination->cep);
 
             if ($destination === null) {
-                throw new Exception('Cep não encontrado!');
+                throw new Exception('CEP não encontrado');
             }
 
             $data->destination->city    = $destination->city;

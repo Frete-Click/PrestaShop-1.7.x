@@ -27,11 +27,12 @@
                 <input type="hidden" class="products" name="product-package[{$key|escape:'htmlall':'UTF-8'}][depth]"
                        value="{$product['depth']/100}"/>
             {/foreach}
-            <button class="btn btn-default" type="button" id="btCalcularFrete" data-loading-text="Carregando...">
-                Calcular
+            <button class="submit-button" type="button" id="btCalcularFrete" data-loading-text="Carregando...">
+                Calcular Frete
             </button>
         </form>
-        <div id="resultado-frete" style="padding-top:20px;">
+        <div id="response-error" class="response-error"></div>
+        <div id="resultado-frete" class="resultado-frete">
             <table class="table" id="frete-valores">
                 <tbody>
                 </tbody>
@@ -113,56 +114,57 @@
             contact: null
         };
 
-        btnFCFind.innerHTML = 'Carregando';
-        let resultadoFrete = document.querySelector('#resultado-frete')
-        let freteValores = document.querySelector("#frete-valores tbody");
-        let url_shipping_quote = document.querySelector('#calcular_frete');
-        let url = url_shipping_quote.dataset.action;
+        btnFCFind.innerHTML    = 'Carregando...';
+        btnFCFind.disabled     = true;
 
-        resultadoFrete.display = 'none';
-        freteValores.innerHTML = "";
+        let resultadoFrete     = document.getElementById('resultado-frete')
+        let freteValores       = document.querySelector("#frete-valores tbody");
+        let responseError      = document.getElementById('response-error');
+        let url_shipping_quote = document.querySelector('#calcular_frete');
+        let url                = url_shipping_quote.dataset.action;
+
+        resultadoFrete.style.display = "none";
+        responseError.style.display  = "none";
+        freteValores.innerHTML       = "";
 
         fetch(url, {
             method: "POST",
-            body: JSON.stringify(inputForm)
+            body  : JSON.stringify(inputForm)
         })
             .then(response => {
-                btnFCFind.innerHTML = 'Calular';
                 if (response.status === 200) {
                     return response.json();
-                } else {
-                    throw new Error('Ops! Houve um erro em nosso servidor.');
                 }
+
+                throw new Error('Ops! Houve um erro em nosso servidor.');
             })
             .then(response => {
-                if (response.quotes.length > 0) {
-                    let table = '';
-                    response.quotes.forEach(quote => {
-                        table += addRowTableFrete(quote.carrier.name, quote.carrier.image, quote.deliveryDeadline, quote.total)
-                    });
-                    freteValores.innerHTML = table;
-                } else {
-                    //erro
-                    if (typeof response.data.response.error == "string") {
-                        freteValores.innerHTML = addRowError(response.data.response.error);
-                    } else if (typeof response.data.response.error == "object") {
-                        let erros = response.data.response.error;
-                        if (erros.length > 0) {
-                            let errors = '';
-                            for (var i = 0; i < erros.length; i++) {
-                                errors += addRowError(erros[i].message);
-                            }
-                            freteValores.innerHTML = errors;
-                        } else {
-                            $("#frete-valores tbody").append(addRowError(erros.message));
-                        }
+                let _response = response.response;
+
+                if (_response.success === false) {
+                    responseError.innerText     = _response.error;
+                    responseError.style.display = "block";
+                }
+                else {
+                    if (_response.data.quotes) {
+                        let table = '';
+
+                        _response.data.quotes.forEach(quote => {
+                            table += addRowTableFrete(quote.carrier.name, quote.carrier.image, quote.deliveryDeadline, quote.total)
+                        });
+
+                        freteValores.innerHTML       = table;
+                        resultadoFrete.style.display = "block";
                     }
-                    resultadoFrete.display = 'block';
                 }
             })
             .catch(error => {
-                btnFCFind.innerHTML = 'Calular';
-                console.error(error);
+                responseError.innerText     = error.message;
+                responseError.style.display = "block";
+            })
+            .finally(() => {
+                btnFCFind.innerHTML = 'Calcular Frete';
+                btnFCFind.disabled  = false;
             });
     }
 </script>

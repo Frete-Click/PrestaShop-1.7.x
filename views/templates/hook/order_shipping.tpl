@@ -15,8 +15,8 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Transportadora sssss</th>
-            <th>Prazo estimado de entrega ccc</th>
+            <th>Transportadora</th>
+            <th>Prazo estimado de entrega</th>
             <th>Valor</th>
           </tr>
         </thead>

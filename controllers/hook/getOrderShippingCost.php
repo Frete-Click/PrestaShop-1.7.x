@@ -20,7 +20,7 @@ class FreteClickGetOrderShippingCostController
             return false;
         }
 
-        if ($this->isFreeShipping($this->getTotal($cart))) {
+        if ($this->module->isFreeShipping($this->getTotal($cart))) {
             return 0;
         }
 
@@ -91,24 +91,6 @@ class FreteClickGetOrderShippingCostController
         } catch (\Throwable $th) {
             return false;
         }
-    }
-
-    private function isFreeShipping($totalPrice): bool
-    {
-        $freePrice = $this->getFreeShippingPrice();
-        if ($freePrice === false)
-            return false;
-
-        return $totalPrice >= $freePrice;
-    }
-
-    private function getFreeShippingPrice()
-    {
-        $price = Configuration::get('FC_FREE_SHIPPING_PRICE');
-        if (!is_numeric($price))
-            return false;
-
-        return (float) $price;
     }
 
     public function bestPrice($quotes)

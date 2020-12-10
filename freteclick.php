@@ -494,6 +494,7 @@ class Freteclick extends CarrierModule
         $controller = $this->getHookController('getOrderShippingCost');
         return $controller->run($params, $shipping_cost);
 
+        /*
         if (!$this->cookie->fc_valorFrete) {
             $total = 0;
             foreach ($this->context->cart->getProducts() as $product) {
@@ -519,6 +520,7 @@ class Freteclick extends CarrierModule
             $this->getTransportadoras($arrPostFields);
         }
         return (isset($this->cookie->fc_valorFrete) ? $this->cookie->fc_valorFrete : 0);
+        */
     }
 
     public function getOrderShippingCostExternal($params)
@@ -1315,5 +1317,23 @@ class Freteclick extends CarrierModule
             'message' => $error
         );
         return $this->getErrors();
+    }
+
+    public function isFreeShipping(float $totalPrice): bool
+    {
+        $freePrice = $this->getFreeShippingPrice();
+        if ($freePrice === false)
+            return false;
+
+        return $totalPrice >= $freePrice;
+    }
+
+    public function getFreeShippingPrice()
+    {
+        $price = Configuration::get('FC_FREE_SHIPPING_PRICE');
+        if (!is_numeric($price))
+            return false;
+
+        return (float) $price;
     }
 }

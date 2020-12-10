@@ -1122,7 +1122,7 @@ class Freteclick extends CarrierModule
                 $data->productType = 'Material de Escritório';
             }
 
-            $resp = $this->getQuoteSimulation([
+            $payload = [
                 'origin'            => [
                     'city'    => $data->origin->city,
                     'country' => $data->origin->country,
@@ -1136,9 +1136,13 @@ class Freteclick extends CarrierModule
                 'productTotalPrice' => $data->productTotalPrice,
                 'packages'          => $data->packages,
                 'productType'       => $data->productType,
-            ]);
+                "contact"           => null
+            ];
+ 
+            if (($result = $this->getStoredSimulation($payload)) === null)
+                $result = $this->getQuoteSimulation($payload);
 
-            $arrJson = $this->orderByPrice($resp);
+            $arrJson = $this->orderByPrice($result);
 
             if (!$this->cookie->fc_valorFrete) {
                 $this->cookie->fc_valorFrete = $arrJson->quotes[0]->total;
@@ -1182,6 +1186,14 @@ class Freteclick extends CarrierModule
                 ]
             ]);
         }
+    }
+
+    public function getStoredSimulation(array $requestPayload)
+    {
+        $quoteMD5 = md5(json_encode($requestPayload));
+        if (isset($_SESSION[$quoteMD5]))
+            return $_SESSION[$quoteMD5];
+        return null;
     }
 
     public function getQuoteSimulation(array $data)

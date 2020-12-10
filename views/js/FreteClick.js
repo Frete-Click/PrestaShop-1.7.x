@@ -170,8 +170,6 @@ jQuery(function ($) {
             maskCep(this, "#####-###");
         });
 
-
-
         var tb_cep = $('#fk-cep,#cep-origin');
         if (tb_cep) {
             console.log('e');

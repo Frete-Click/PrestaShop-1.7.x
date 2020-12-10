@@ -356,6 +356,13 @@ class Freteclick extends CarrierModule
                         'required' => true,
                     ),
                     array(
+                        'type' => 'text',
+                        'label' => $this->l('Free Shipping price'),
+                        'name' => 'FC_FREE_SHIPPING_PRICE',
+                        'required' => true,
+                        'class' => 'form-control'
+                    ),
+                    array(
                         'type' => 'radio',
                         'label' => $this->l('Product Information'),
                         'hint' => $this->l('Displays a shipping quote box on the product description screen.'),
@@ -894,6 +901,7 @@ class Freteclick extends CarrierModule
             'FC_INFO_PROD' => Tools::getValue('FC_INFO_PROD', Configuration::get('FC_INFO_PROD')),
             'FC_SHOP_CART' => Tools::getValue('FC_SHOP_CART', Configuration::get('FC_SHOP_CART')),
             'FC_API_KEY' => Tools::getValue('FC_API_KEY', Configuration::get('FC_API_KEY')),
+            'FC_FREE_SHIPPING_PRICE' => Tools::getValue('FC_FREE_SHIPPING_PRICE', Configuration::get('FC_FREE_SHIPPING_PRICE')),
         );
         return $values;
     }
@@ -933,6 +941,7 @@ class Freteclick extends CarrierModule
             Configuration::updateValue('FC_INFO_PROD', Tools::getValue('FC_INFO_PROD'));
             Configuration::updateValue('FC_SHOP_CART', Tools::getValue('FC_SHOP_CART'));
             Configuration::updateValue('FC_API_KEY', Tools::getValue('FC_API_KEY'));
+            Configuration::updateValue('FC_FREE_SHIPPING_PRICE', Tools::getValue('FC_FREE_SHIPPING_PRICE'));
             $this->_html .= $this->displayConfirmation($this->l('Configurações atualizadas'));
         } catch (Exception $ex) {
             $this->_postErrors[] = $ex->getMessage();

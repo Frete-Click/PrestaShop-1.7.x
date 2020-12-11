@@ -37,6 +37,16 @@ class Freteclick extends CarrierModule
      */
     public $Quote   = null;
 
+    /**
+     * @var SDK\Client\People
+     */
+    public $People  = null;
+
+    /**
+     * @var SDK\Client\Order
+     */
+    public $Order   = null;
+
     public function __construct()
     {
         $this->module_key = '787992febc148fba30e5885d08c14f8c';
@@ -103,8 +113,10 @@ class Freteclick extends CarrierModule
         $this->url_add_quote_origin_company     = '/sales/add-quote-origin-company.json.json';
 
         $this->API     = new SDK\Core\Client\API('https://api.freteclick.com.br', Configuration::get('FC_API_KEY'));
-        $this->Address = new SDK\Client\Address($this->API);
-        $this->Quote   = new SDK\Client\Quote($this->API);
+        $this->Address = new SDK\Client\Address ($this->API);
+        $this->Quote   = new SDK\Client\Quote   ($this->API);
+        $this->People  = new SDK\Client\People  ($this->API);
+        $this->Order   = new SDK\Client\Order   ($this->API);
     }
 
     public function getAddressByPostalcode(string $postalcode): ?object
@@ -551,51 +563,63 @@ class Freteclick extends CarrierModule
 
     public function hookActionPaymentConfirmation($params)
     {
-        $order = new Order($params['id_order']);
+        $order        = new Order($params['id_order']);
         $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+
         try {
-            $customer = new Customer($params['cart']->id_customer);
 
-            $controller = $this->getHookController('getContact');
-            $DeliveryPeople = $controller->run($customer->email);
+            // retrieve customer data
 
-            if (!$DeliveryPeople) {
-                $controller = $this->getHookController('postContact');
-                $paramsPeople = [
-                    "name" => $customer->firstname . ' ' . $customer->lastname,
-                    "email" => $customer->email,
-                    "phone" => '(00) 90000-0000',
-                    "document" => '22121212121'
+            $customer   = new Customer($params['cart']->id_customer);
+            $customerId = $this->People->getIdByEmail($customer->email);
+            $deliveryTo = $this->loadDeliveryAddress($params['cart']);
+
+            if ($customerId === null) {
+                $payload = [
+                    'name'    => $customer->firstname,
+                    'alias'   => $customer->lastname,
+                    'type'    => 'F',
+                    'email'   => $customer->email,
+                    'address' => $deliveryTo 
                 ];
-                $DeliveryPeople = $controller->run($paramsPeople);
+                $customerId = $this->People->createCustomer($payload);
+                if ($customerId === null)
+                    throw new \Exception('Customer was not created');
             }
-
 
             $orderId = substr($orderCarrier->tracking_number, 0, strpos($orderCarrier->tracking_number, '.'));
             $quoteId = substr($orderCarrier->tracking_number, (strpos($orderCarrier->tracking_number, '.') + 1));
 
-            $params = [
-                "quote" => $quoteId,
-                "price" => $orderCarrier->shipping_cost_tax_incl,
-                "retrieve" => [
-                    "address" => $this->loadRetrieveAddress()
-                ],
-                "delivery" => [
-                    "id" => $DeliveryPeople->people_id,
-                    "contact" => $DeliveryPeople->people_id,
-                    "address" => $this->loadDeliveryAddress($params['cart'])
-                ],
-            ];
+            // update order shop
 
             $order->setWsShippingNumber($orderId);
             $order->save();
 
-            $controller = $this->getHookController('setOrderPaid');
-            $result = $controller->run($params);
+            // update freteclick order
+
+            $shopOwnerId = $this->People->getMeId();
+            $payload     = [
+                'quote'    => $quoteId,
+                'price'    => $orderCarrier->shipping_cost_tax_incl,
+                'payer'    => $shopOwnerId,
+                'retrieve' => [
+                    'id'      => $shopOwnerId,
+                    'address' => $this->loadRetrieveAddress(),
+                    'contact' => $shopOwnerId,
+                ],
+                'delivery' => [
+                    'id'      => $customerId,
+                    'address' => $deliveryTo,
+                    'contact' => $customerId,
+                ],
+            ];
+
+            $this->Order->finishCheckout($orderId, $payload);
 
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            return false;
         }
+
         return true;
     }
 

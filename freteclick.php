@@ -597,15 +597,15 @@ class Freteclick extends CarrierModule
 
             // update freteclick order
 
-            $shopOwnerId = $this->People->getMeId();
-            $payload     = [
+            $shopOwner = $this->People->getMe();
+            $payload   = [
                 'quote'    => $quoteId,
                 'price'    => $orderCarrier->shipping_cost_tax_incl,
-                'payer'    => $shopOwnerId,
+                'payer'    => $shopOwner->companyId,
                 'retrieve' => [
-                    'id'      => $shopOwnerId,
+                    'id'      => $shopOwner->companyId,
                     'address' => $this->loadRetrieveAddress(),
-                    'contact' => $shopOwnerId,
+                    'contact' => $shopOwner->peopleId,
                 ],
                 'delivery' => [
                     'id'      => $customerId,

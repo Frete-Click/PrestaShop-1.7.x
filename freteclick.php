@@ -1,7 +1,6 @@
 <?php
 require_once(dirname(__FILE__).'/vendor/autoload.php');
 
-use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManager;
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
 
 if (!defined('_PS_VERSION_')) {
@@ -41,17 +40,16 @@ class Freteclick extends CarrierModule
     public function __construct()
     {
         $this->module_key = '787992febc148fba30e5885d08c14f8c';
-        $this->cookie = new Cookie('Frete Click');
+        $this->cookie     = new Cookie('Frete Click');
         $this->cookie->setExpire(time() + 20 * 60);
 
-        $this->name = 'freteclick';
-        $this->tab = 'shipping_logistics';
+        $this->name    = 'freteclick';
+        $this->tab     = 'shipping_logistics';
         $this->version = '2.0.3';
-        $this->author = 'Frete Click';
+        $this->author  = 'Frete Click';
 
         $this->displayName = $this->l('Frete Click');
         $this->description = $this->l('Cálculo de fretes via transportadoras pela API da Frete Click.');
-
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -93,15 +91,16 @@ class Freteclick extends CarrierModule
                 $this->warning = $this->l('The country origin field is required.');
             }
         }
-        $this->api_url = 'https://api.freteclick.com.br/quotes';
-        $this->url_shipping_quote = '/sales/shipping-quote.json';
-        $this->url_city_origin = '/carrier/search-city-origin.json';
-        $this->url_city_destination = '/carrier/search-city-destination.json';
-        $this->url_search_city_from_cep = '/carrier/search-city-from-cep.json';
-        $this->url_choose_quote = '/sales/choose-quote.json';
-        $this->url_api_correios = '/calculador/CalcPrecoPrazo.asmx?WSDL';
+
+        $this->api_url                          = 'https://api.freteclick.com.br/quotes';
+        $this->url_shipping_quote               = '/sales/shipping-quote.json';
+        $this->url_city_origin                  = '/carrier/search-city-origin.json';
+        $this->url_city_destination             = '/carrier/search-city-destination.json';
+        $this->url_search_city_from_cep         = '/carrier/search-city-from-cep.json';
+        $this->url_choose_quote                 = '/sales/choose-quote.json';
+        $this->url_api_correios                 = '/calculador/CalcPrecoPrazo.asmx?WSDL';
         $this->url_add_quote_destination_client = '/sales/add-quote-destination-client.json';
-        $this->url_add_quote_origin_company = '/sales/add-quote-origin-company.json.json';
+        $this->url_add_quote_origin_company     = '/sales/add-quote-origin-company.json.json';
 
         $this->API     = new SDK\Core\Client\API('https://api.freteclick.com.br', Configuration::get('FC_API_KEY'));
         $this->Address = new SDK\Client\Address($this->API);
@@ -115,10 +114,6 @@ class Freteclick extends CarrierModule
         );
     }
 
-    /**
-     * Don't forget to create update methods if needed:
-     * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
-     */
     public function install()
     {
         if (extension_loaded('curl') == false) {

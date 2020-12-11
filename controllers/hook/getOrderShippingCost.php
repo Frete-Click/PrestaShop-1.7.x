@@ -20,8 +20,7 @@ class FreteClickGetOrderShippingCostController
             return false;
         }
 
-        $productTotalPrice = $this->getTotal($cart);
-        if ($productTotalPrice >= 400) {
+        if ($this->module->isFreeShipping($this->getTotal($cart))) {
             return 0;
         }
 

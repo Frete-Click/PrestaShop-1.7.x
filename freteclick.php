@@ -147,6 +147,7 @@ class Freteclick extends CarrierModule
             $this->registerHook('displayProductAdditionalInfo') &&
             $this->registerHook('displayShoppingCartFooter') &&
             $this->registerHook('actionFrontControllerSetMedia') &&
+            $this->registerHook('actionOrderStatusUpdate') &&
             $this->registerHook('extraCarrier') &&
             $this->registerHook('OrderConfirmation') &&
             Configuration::updateValue('FC_INFO_PROD', 1) &&
@@ -189,7 +190,8 @@ class Freteclick extends CarrierModule
             $this->unregisterHook('displayProductActions') &&
             $this->unregisterHook('OrderConfirmation') &&
             $this->unregisterHook('displayShoppingCartFooter') &&
-            $this->unregisterHook('actionFrontControllerSetMedia');
+            $this->unregisterHook('actionFrontControllerSetMedia') &&
+            $this->unregisterHook('actionOrderStatusUpdate');
     }
 
     public function hookActionFrontControllerSetMedia()
@@ -563,16 +565,41 @@ class Freteclick extends CarrierModule
 
     public function hookActionPaymentConfirmation($params)
     {
-        $order        = new Order($params['id_order']);
-        $orderCarrier = new OrderCarrier($order->getIdOrderCarrier());
+    }
 
+    public function hookActionOrderStatusUpdate($params)
+    {
+        $order = new Order($params['id_order']);
+
+        /**
+         * Se a order nao foi paga e o status esta sendo
+         * mudado para "pagamento aceito"
+         */
+        if ($order->current_state !== 2 && $params['newOrderStatus']->id === 2) {
+            $this->setOrderCheckoutAsFinished($order);
+        }
+    }
+
+    public function setOrderCheckoutAsFinished(Order $order)
+    {
         try {
+            $carrier = new OrderCarrier($order->getIdOrderCarrier());
+            $orderId = substr($carrier->tracking_number, 0, strpos($carrier->tracking_number, '.'));
+            $quoteId = substr($carrier->tracking_number, (strpos($carrier->tracking_number, '.') + 1));
+
+            if (empty($orderId)) {
+                throw new Exception('Order Id is not defined');
+            }
+
+            if (empty($quoteId)) {
+                throw new Exception('Quote Id is not defined');
+            }
 
             // retrieve customer data
 
-            $customer   = new Customer($params['cart']->id_customer);
+            $customer   = new Customer($order->id_customer);
             $customerId = $this->People->getIdByEmail($customer->email);
-            $deliveryTo = $this->loadDeliveryAddress($params['cart']);
+            $deliveryTo = $this->loadDeliveryAddress($order->id_address_delivery);
 
             if ($customerId === null) {
                 $payload = [
@@ -580,27 +607,19 @@ class Freteclick extends CarrierModule
                     'alias'   => $customer->lastname,
                     'type'    => 'F',
                     'email'   => $customer->email,
-                    'address' => $deliveryTo 
+                    'address' => $deliveryTo
                 ];
                 $customerId = $this->People->createCustomer($payload);
                 if ($customerId === null)
                     throw new \Exception('Customer was not created');
             }
 
-            $orderId = substr($orderCarrier->tracking_number, 0, strpos($orderCarrier->tracking_number, '.'));
-            $quoteId = substr($orderCarrier->tracking_number, (strpos($orderCarrier->tracking_number, '.') + 1));
-
-            // update order shop
-
-            $order->setWsShippingNumber($orderId);
-            $order->save();
-
             // update freteclick order
 
             $shopOwner = $this->People->getMe();
             $payload   = [
                 'quote'    => $quoteId,
-                'price'    => $orderCarrier->shipping_cost_tax_incl,
+                'price'    => $carrier->shipping_cost_tax_incl,
                 'payer'    => $shopOwner->companyId,
                 'retrieve' => [
                     'id'      => $shopOwner->companyId,
@@ -616,6 +635,11 @@ class Freteclick extends CarrierModule
 
             $this->Order->finishCheckout($orderId, $payload);
 
+            // update order shop
+
+            $order->setWsShippingNumber($orderId);
+            $order->save();
+
         } catch (Exception $e) {
             return false;
         }
@@ -623,13 +647,14 @@ class Freteclick extends CarrierModule
         return true;
     }
 
-    public function loadDeliveryAddress($cart)
+    public function loadDeliveryAddress($addressId)
     {
-        $address     = new Address($cart->id_address_delivery);
-        $destination = $this->getAddressByPostalcode($address->postcode);
+        $address       = new Address($addressId);
+        $destination   = $this->getAddressByPostalcode($address->postcode);
 
-        $arr    = explode(' ', $address->address1);
-        $number = $arr[count($arr) - 1];
+        $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
+        if (empty($addressNumber))
+            $addressNumber = '1';
 
         return [
             'country'     => $destination->country,
@@ -637,7 +662,7 @@ class Freteclick extends CarrierModule
             'city'        => $destination->city,
             'district'    => $destination->district,
             'street'      => $destination->street,
-            'number'      => $number,
+            'number'      => $addressNumber,
             'postal_code' => $destination->id,
             'address'     => $destination->description,
         ];
@@ -652,7 +677,7 @@ class Freteclick extends CarrierModule
             'district'    => Configuration::get('FC_DISTRICT_ORIGIN'),
             'street'      => Configuration::get('FC_STREET_ORIGIN'),
             'number'      => Configuration::get('FC_NUMBER_ORIGIN'),
-            'postal_code' => Configuration::get('FC_CEP_ORIGIN'),
+            'postal_code' => preg_replace('/[^0-9]/', '', Configuration::get('FC_CEP_ORIGIN')),
             'address'     => Configuration::get('FC_STREET_ORIGIN'),
             'complement'  => Configuration::get('FC_COMPLEMENT_ORIGIN'),
         ];
@@ -827,18 +852,20 @@ class Freteclick extends CarrierModule
     public function hookOrderConfirmation($params)
     {
         session_start();
-        $order = $_SESSION[$_SESSION['lastQuote']];
-        $shippingNumber = $order->id;
-        $carrier = new Carrier($params['order']->id_carrier);
-        foreach ($order->quotes as $quote) {
-            if ($quote->carrier->name === $carrier->name) {
-                $shippingNumber .= '.' . $quote->id;
-                break;
-            }
-        }
 
-        $params['order']->setWsShippingNumber($shippingNumber);
-        $params['order']->save();
+        $order = $_SESSION[$_SESSION['lastQuote']];
+
+        if ($order->quotes) {
+            $shippingNumber = $order->id;
+
+            $quotes = $this->orderByPrice($order->quotes);
+            if (isset($quotes[0])) {
+                $shippingNumber .= '.' . $quotes[0]->id;
+            }
+
+            $params['order']->setWsShippingNumber($shippingNumber);
+            $params['order']->save();
+        }
     }
 
     private function getListProductsName()

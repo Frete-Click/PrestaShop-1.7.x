@@ -1,6 +1,6 @@
 {
     "name": "freteclick/freteclick",
     "require": {
-        "freteclick/sdk": "1.2.12"
+        "freteclick/sdk": "1.2.13"
     }
 }

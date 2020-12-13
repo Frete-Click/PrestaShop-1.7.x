@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "16fc79a0a458f73b48b7fe75a2a12e47",
+    "content-hash": "c299e1536a76709ade54613631029a6c",
     "packages": [
         {
             "name": "freteclick/sdk",
-            "version": "v1.2.11",
+            "version": "v1.2.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Frete-Click/SDK.git",
-                "reference": "2b71e6963741a9305f7dd2f0d597b894fe9118fc"
+                "reference": "35cf3750bd6a33bff2d94984d49c2c9306eb81c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Frete-Click/SDK/zipball/2b71e6963741a9305f7dd2f0d597b894fe9118fc",
-                "reference": "2b71e6963741a9305f7dd2f0d597b894fe9118fc",
+                "url": "https://api.github.com/repos/Frete-Click/SDK/zipball/35cf3750bd6a33bff2d94984d49c2c9306eb81c1",
+                "reference": "35cf3750bd6a33bff2d94984d49c2c9306eb81c1",
                 "shasum": ""
             },
             "require": {
@@ -42,9 +42,9 @@
             "description": "SDK da plataforma Frete Click",
             "support": {
                 "issues": "https://github.com/Frete-Click/SDK/issues",
-                "source": "https://github.com/Frete-Click/SDK/tree/v1.2.11"
+                "source": "https://github.com/Frete-Click/SDK/tree/v1.2.12"
             },
-            "time": "2020-12-04T18:01:13+00:00"
+            "time": "2020-12-13T00:41:47+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",

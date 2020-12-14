@@ -649,12 +649,17 @@ class Freteclick extends CarrierModule
 
     public function loadDeliveryAddress($addressId)
     {
-        $address       = new Address($addressId);
-        $destination   = $this->getAddressByPostalcode($address->postcode);
+        $address     = new Address($addressId);
+        $destination = $this->getAddressByPostalcode($address->postcode);
 
-        $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
-        if (empty($addressNumber))
-            $addressNumber = '1';
+        if (isset($address->number) && !empty($address->number)) {
+            $addressNumber = $address->number;
+        }
+        else {
+            $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
+            if (empty($addressNumber))
+                $addressNumber = '1';
+        }
 
         return [
             'country'     => $destination->country,

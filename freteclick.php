@@ -119,7 +119,7 @@ class Freteclick extends CarrierModule
         $this->Order   = new SDK\Client\Order   ($this->API);
     }
 
-    public function getAddressByPostalcode(string $postalcode): ?object
+    public function getAddressByPostalcode(string $postalcode)
     {
         return $this->Address->getAddressByCEP(
             preg_replace('/[^0-9]/', '', $postalcode)

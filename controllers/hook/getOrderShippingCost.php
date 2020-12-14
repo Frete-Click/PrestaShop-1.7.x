@@ -20,10 +20,6 @@ class FreteClickGetOrderShippingCostController
             return false;
         }
 
-        if ($this->module->isFreeShipping($this->getTotal($cart))) {
-            return 0;
-        }
-
         if (!isset($_SESSION)) {
             session_start();
         }
@@ -69,7 +65,7 @@ class FreteClickGetOrderShippingCostController
 
             $carrier->save();
 
-            return $bestQuote->total;
+            return $this->module->isFreeShipping($this->getTotal($cart)) ? 0 : $bestQuote->total;
         }
 
         try {
@@ -86,7 +82,7 @@ class FreteClickGetOrderShippingCostController
 
             $carrier->save();
 
-            return $bestQuote->total;
+            return $this->module->isFreeShipping($this->getTotal($cart)) ? 0 : $bestQuote->total;
 
         } catch (\Throwable $th) {
             return false;

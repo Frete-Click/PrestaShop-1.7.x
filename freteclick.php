@@ -112,7 +112,7 @@ class Freteclick extends CarrierModule
         $this->url_add_quote_destination_client = '/sales/add-quote-destination-client.json';
         $this->url_add_quote_origin_company     = '/sales/add-quote-origin-company.json.json';
 
-        $this->API     = new SDK\Core\Client\API('https://api.freteclick.com.br', Configuration::get('FC_API_KEY'));
+        $this->API     = new SDK\Core\Client\API(Configuration::get('FC_API_KEY'));
         $this->Address = new SDK\Client\Address ($this->API);
         $this->Quote   = new SDK\Client\Quote   ($this->API);
         $this->People  = new SDK\Client\People  ($this->API);
@@ -649,12 +649,17 @@ class Freteclick extends CarrierModule
 
     public function loadDeliveryAddress($addressId)
     {
-        $address       = new Address($addressId);
-        $destination   = $this->getAddressByPostalcode($address->postcode);
+        $address     = new Address($addressId);
+        $destination = $this->getAddressByPostalcode($address->postcode);
 
-        $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
-        if (empty($addressNumber))
-            $addressNumber = '1';
+        if (isset($address->number) && !empty($address->number)) {
+            $addressNumber = $address->number;
+        }
+        else {
+            $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
+            if (empty($addressNumber))
+                $addressNumber = '1';
+        }
 
         return [
             'country'     => $destination->country,

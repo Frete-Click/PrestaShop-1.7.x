@@ -36,6 +36,7 @@ class FreteClickGetOrderShippingCostController
         }
 
         $destination = $this->module->getAddressByPostalcode($cep);
+
         $payload     = [
             'origin'            => [
                 'country' => Configuration::get('FC_COUNTRY_ORIGIN'),
@@ -59,9 +60,11 @@ class FreteClickGetOrderShippingCostController
             $result    = $_SESSION[$quoteMD5];
             $bestQuote = $this->bestPrice($result->quotes);
 
+            /*
             foreach (Language::getLanguages(true) as $lang) {
                 $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$bestQuote->deliveryDeadline} dias");
             }
+            */
 
             $carrier->save();
 
@@ -76,8 +79,11 @@ class FreteClickGetOrderShippingCostController
             $_SESSION['lastQuote'] = $quoteMD5;
             $_SESSION[$quoteMD5]   = $result;
 
+            $deadLine = $this->getDeadLineFromQuote($bestQuote);
+            $deadLine = (string) $deadLine;
+
             foreach (Language::getLanguages(true) as $lang) {
-                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$bestQuote->deliveryDeadline} dias");
+                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$deadLine} dias");
             }
 
             $carrier->save();
@@ -87,6 +93,18 @@ class FreteClickGetOrderShippingCostController
         } catch (\Throwable $th) {
             return false;
         }
+    }
+
+    public function getDeadLineFromQuote($quote)
+    {
+        $deadline = Configuration::get('FC_SHIPPING_DEADLINE');
+        $deadline = !is_numeric($deadline) ? 0 : ((int) $deadline);
+
+        $retrieve = (int) $quote->retrieveDeadline;
+
+        $delivery = (int) $quote->deliveryDeadline;
+
+        return $retrieve + $delivery + $deadline;
     }
 
     public function bestPrice($quotes)

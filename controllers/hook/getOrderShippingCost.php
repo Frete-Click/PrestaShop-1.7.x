@@ -83,7 +83,7 @@ class FreteClickGetOrderShippingCostController
             $deadLine = (string) $deadLine;
 
             foreach (Language::getLanguages(true) as $lang) {
-                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$deadLine} dias");
+                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$deadLine} dias úteis");
             }
 
             $carrier->save();

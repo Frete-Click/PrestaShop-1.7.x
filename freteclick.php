@@ -357,6 +357,13 @@ class Freteclick extends CarrierModule
                         'class' => 'form-control'
                     ),
                     array(
+                        'type' => 'text',
+                        'label' => $this->l('Shipping deadline'),
+                        'name' => 'FC_SHIPPING_DEADLINE',
+                        'required' => true,
+                        'class' => 'form-control'
+                    ),
+                    array(
                         'type' => 'radio',
                         'label' => $this->l('Product Information'),
                         'hint' => $this->l('Displays a shipping quote box on the product description screen.'),
@@ -572,10 +579,9 @@ class Freteclick extends CarrierModule
         $order = new Order($params['id_order']);
 
         /**
-         * Se a order nao foi paga e o status esta sendo
-         * mudado para "pagamento aceito"
+         * status do pedido sendo mudado para "pedido em separacao"
          */
-        if ($order->current_state !== 2 && $params['newOrderStatus']->id === 2) {
+        if ($order->current_state != 32 && $params['newOrderStatus']->id == 32) {
             $this->setOrderCheckoutAsFinished($order);
         }
     }
@@ -584,14 +590,17 @@ class Freteclick extends CarrierModule
     {
         try {
             $carrier = new OrderCarrier($order->getIdOrderCarrier());
-            $orderId = substr($carrier->tracking_number, 0, strpos($carrier->tracking_number, '.'));
-            $quoteId = substr($carrier->tracking_number, (strpos($carrier->tracking_number, '.') + 1));
 
-            if (empty($orderId)) {
+            if (preg_match('/^(\d+)[\-.](\d+)$/', $carrier->tracking_number, $tracking) === 1) {
+                $orderId = $tracking[1];
+                $quoteId = $tracking[2];
+            }
+
+            if (!isset($orderId)) {
                 throw new Exception('Order Id is not defined');
             }
 
-            if (empty($quoteId)) {
+            if (!isset($quoteId)) {
                 throw new Exception('Quote Id is not defined');
             }
 
@@ -768,6 +777,7 @@ class Freteclick extends CarrierModule
             'FC_SHOP_CART' => Tools::getValue('FC_SHOP_CART', Configuration::get('FC_SHOP_CART')),
             'FC_API_KEY' => Tools::getValue('FC_API_KEY', Configuration::get('FC_API_KEY')),
             'FC_FREE_SHIPPING_PRICE' => Tools::getValue('FC_FREE_SHIPPING_PRICE', Configuration::get('FC_FREE_SHIPPING_PRICE')),
+            'FC_SHIPPING_DEADLINE' => Tools::getValue('FC_SHIPPING_DEADLINE', Configuration::get('FC_SHIPPING_DEADLINE'))
         );
         return $values;
     }
@@ -808,6 +818,7 @@ class Freteclick extends CarrierModule
             Configuration::updateValue('FC_SHOP_CART', Tools::getValue('FC_SHOP_CART'));
             Configuration::updateValue('FC_API_KEY', Tools::getValue('FC_API_KEY'));
             Configuration::updateValue('FC_FREE_SHIPPING_PRICE', Tools::getValue('FC_FREE_SHIPPING_PRICE'));
+            Configuration::updateValue('FC_SHIPPING_DEADLINE', Tools::getValue('FC_SHIPPING_DEADLINE'));
             $this->_html .= $this->displayConfirmation($this->l('Configurações atualizadas'));
         } catch (Exception $ex) {
             $this->_postErrors[] = $ex->getMessage();
@@ -860,16 +871,18 @@ class Freteclick extends CarrierModule
 
         $order = $_SESSION[$_SESSION['lastQuote']];
 
-        if ($order->quotes) {
-            $shippingNumber = $order->id;
-
-            $quotes = $this->orderByPrice($order->quotes);
-            if (isset($quotes[0])) {
-                $shippingNumber .= '.' . $quotes[0]->id;
+        if (!empty($order)) {
+            if ($order->quotes) {
+                $shippingNumber = $order->id;
+    
+                $quotes = $this->orderByPrice($order->quotes);
+                if (isset($quotes[0])) {
+                    $shippingNumber .= '-' . $quotes[0]->id;
+                }
+    
+                $params['order']->setWsShippingNumber($shippingNumber);
+                $params['order']->save();
             }
-
-            $params['order']->setWsShippingNumber($shippingNumber);
-            $params['order']->save();
         }
     }
 

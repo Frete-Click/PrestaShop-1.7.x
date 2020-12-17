@@ -579,10 +579,9 @@ class Freteclick extends CarrierModule
         $order = new Order($params['id_order']);
 
         /**
-         * Se a order nao foi paga e o status esta sendo
-         * mudado para "pagamento aceito"
+         * status do pedido sendo mudado para "pedido em separacao"
          */
-        if ($order->current_state != "2" && $params['newOrderStatus']->id == 2) {
+        if ($order->current_state != 32 && $params['newOrderStatus']->id == 32) {
             $this->setOrderCheckoutAsFinished($order);
         }
     }

@@ -54,41 +54,32 @@ class FreteClickGetOrderShippingCostController
             "contact"           => null
         ];
 
-        $quoteMD5 = md5(json_encode($payload));
-
-        if (isset($_SESSION[$quoteMD5])) {
-            $result    = $_SESSION[$quoteMD5];
-            $bestQuote = $this->bestPrice($result->quotes);
-
-            /*
-            foreach (Language::getLanguages(true) as $lang) {
-                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$bestQuote->deliveryDeadline} dias");
-            }
-            */
-
-            $carrier->save();
-
-            return $this->module->isFreeShipping($this->getTotal($cart)) ? 0 : $bestQuote->total;
-        }
-
         try {
 
-            $result    = $this->module->getQuoteSimulation($payload);
-            $bestQuote = $this->bestPrice($result->quotes);
+          $quoteMD5 = md5(json_encode($payload));
+
+          if (isset($_SESSION[$quoteMD5])) {
+            $simulation = $_SESSION[$quoteMD5];
+            $bestQuote  = $this->bestPrice($simulation->quotes);
+          }
+          else {
+            $simulation = $this->module->getQuoteSimulation($payload);
+            $bestQuote  = $this->bestPrice($simulation->quotes);
 
             $_SESSION['lastQuote'] = $quoteMD5;
-            $_SESSION[$quoteMD5]   = $result;
+            $_SESSION[$quoteMD5]   = $simulation;
 
             $deadLine = $this->getDeadLineFromQuote($bestQuote);
             $deadLine = (string) $deadLine;
 
             foreach (Language::getLanguages(true) as $lang) {
-                $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$deadLine} dias úteis");
+              $carrier->delay[$lang['id_lang']] = $this->module->l("Entrega em até {$deadLine} dias úteis");
             }
 
             $carrier->save();
+          }
 
-            return $this->module->isFreeShipping($this->getTotal($cart)) ? 0 : $bestQuote->total;
+          return $this->module->isFreeShipping($this->getTotal($cart)) ? 0 : $bestQuote->total;
 
         } catch (\Throwable $th) {
             return false;

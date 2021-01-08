@@ -578,30 +578,29 @@ class Freteclick extends CarrierModule
     {
         $order = new Order($params['id_order']);
 
-        /**
-         * status do pedido sendo mudado para "pedido em separacao"
-         */
-        if ($order->current_state != 32 && $params['newOrderStatus']->id == 32) {
+        if (((bool) $params['newOrderStatus']->paid) === true) {
             $this->setOrderCheckoutAsFinished($order);
         }
     }
 
-    public function setOrderCheckoutAsFinished(Order $order)
+    public function setOrderCheckoutAsFinished($order)
     {
         try {
             $carrier = new OrderCarrier($order->getIdOrderCarrier());
 
-            if (preg_match('/^(\d+)[\-.](\d+)$/', $carrier->tracking_number, $tracking) === 1) {
-                $orderId = $tracking[1];
-                $quoteId = $tracking[2];
+            if (preg_match('/^(\d+)[\-.](\d+)$/', $carrier->tracking_number, $tracking) !== 1) {
+                return false;
             }
 
-            if (!isset($orderId)) {
-                throw new Exception('Order Id is not defined');
+            $orderId = $tracking[1];
+            $quoteId = $tracking[2];
+
+            if (empty($orderId)) {
+                throw new \Exception('Order Id is not defined');
             }
 
-            if (!isset($quoteId)) {
-                throw new Exception('Quote Id is not defined');
+            if (empty($quoteId)) {
+                throw new \Exception('Quote Id is not defined');
             }
 
             // retrieve customer data
@@ -619,16 +618,24 @@ class Freteclick extends CarrierModule
                     'address' => $deliveryTo
                 ];
                 $customerId = $this->People->createCustomer($payload);
-                if ($customerId === null)
-                    throw new \Exception('Customer was not created');
+                if ($customerId === null) {
+                  throw new \Exception('Customer was not created');
+                }
             }
 
             // update freteclick order
 
+            if (($price = (float) $carrier->shipping_cost_tax_incl) <= 0) {
+              $price = $this->Order->getQuotationTotal($quoteId);
+              if ($price === null) {
+                throw new \Exception('Order quotation total value is not valid');
+              }
+            }
+
             $shopOwner = $this->People->getMe();
             $payload   = [
                 'quote'    => $quoteId,
-                'price'    => $carrier->shipping_cost_tax_incl,
+                'price'    => $price,
                 'payer'    => $shopOwner->companyId,
                 'retrieve' => [
                     'id'      => $shopOwner->companyId,
@@ -642,18 +649,20 @@ class Freteclick extends CarrierModule
                 ],
             ];
 
-            $this->Order->finishCheckout($orderId, $payload);
+            if ($this->Order->finishCheckout($orderId, $payload) === true) {
 
-            // update order shop
+              // update order shop
 
-            $order->setWsShippingNumber($orderId);
-            $order->save();
+              $order->setWsShippingNumber($orderId);
+              $order->save();
 
-        } catch (Exception $e) {
+              return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
             return false;
         }
-
-        return true;
     }
 
     public function loadDeliveryAddress($addressId)
@@ -867,23 +876,25 @@ class Freteclick extends CarrierModule
      */
     public function hookOrderConfirmation($params)
     {
-        session_start();
+      $shippingNumber = $params['order']->getWsShippingNumber();
 
-        $order = $_SESSION[$_SESSION['lastQuote']];
+      if (empty($shippingNumber)) {
+        $order = $this->getLastStoredSimulation();
 
         if (!empty($order)) {
-            if ($order->quotes) {
-                $shippingNumber = $order->id;
-    
-                $quotes = $this->orderByPrice($order->quotes);
-                if (isset($quotes[0])) {
-                    $shippingNumber .= '-' . $quotes[0]->id;
-                }
-    
-                $params['order']->setWsShippingNumber($shippingNumber);
-                $params['order']->save();
+          if ($order->quotes) {
+            $shippingNumber = $order->id;
+
+            $quotes = $this->orderByPrice($order->quotes);
+            if (isset($quotes[0])) {
+              $shippingNumber .= '-' . $quotes[0]->id;
             }
+
+            $params['order']->setWsShippingNumber($shippingNumber);
+            $params['order']->save();
+          }
         }
+      }
     }
 
     private function getListProductsName()
@@ -938,7 +949,7 @@ class Freteclick extends CarrierModule
                 'productType'       => $data->productType,
                 "contact"           => null
             ];
- 
+
             if (($result = $this->getStoredSimulation($payload)) === null)
                 $result = $this->getQuoteSimulation($payload);
 
@@ -994,6 +1005,19 @@ class Freteclick extends CarrierModule
         if (isset($_SESSION[$quoteMD5]))
             return $_SESSION[$quoteMD5];
         return null;
+    }
+
+    public function getLastStoredSimulation()
+    {
+      if (!isset($_SESSION)) {
+          session_start();
+      }
+
+      if (isset($_SESSION['lastQuote'])) {
+        return $_SESSION[$_SESSION['lastQuote']];
+      }
+
+      return null;
     }
 
     public function getQuoteSimulation(array $data)

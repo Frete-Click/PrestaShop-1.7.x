@@ -121,9 +121,7 @@ class Freteclick extends CarrierModule
 
     public function getAddressByPostalcode(string $postalcode)
     {
-        return $this->Address->getAddressByCEP(
-            preg_replace('/[^0-9]/', '', $postalcode)
-        );
+      return $this->Address->getAddressByCEP(preg_replace('/[^0-9]/', '', $postalcode));
     }
 
     public function install()
@@ -437,18 +435,80 @@ class Freteclick extends CarrierModule
         }
     }
 
-    public function getHookController($hook_name)
+    public function getOrderShippingCost($cart, $shipping_cost)
     {
-        require_once(dirname(__FILE__) . '/controllers/hook/' . $hook_name . '.php');
-        $controller_name = $this->name . $hook_name . 'Controller';
-        $controller = new $controller_name($this, __FILE__, $this->_path);
-        return $controller;
+      $carrier = new Carrier($this->id_carrier);
+      if ($carrier->name !== 'Frete Click') {
+        return false;
+      }
+
+      if ($cart->orderExists()) {
+        return false;
+      }
+
+      if (empty($cart->id_address_delivery)) {
+        return false;
+      }
+
+      $address = new Address($cart->id_address_delivery);
+      if (strlen($address->postcode) < 8) {
+        return false;
+      }
+
+      try {
+
+        $simulation = $this->getQuoteSimulation([
+          'cart'        => $cart,
+          'total'       => $this->getCartTotal($cart),
+          'packages'    => $this->getCartPackages($cart),
+          'categories'  => $this->getProductsCategories($cart),
+          'destination' => $address->postcode
+        ]);
+
+        $bestQuote = $simulation->quotes[0];
+        $deadLine  = $this->getDeadLineFromQuote($bestQuote);
+        $deadLine  = (string) $deadLine;
+
+        foreach (Language::getLanguages(true) as $lang) {
+          $carrier->delay[$lang['id_lang']] = $this->l("Entrega em até {$deadLine} dias úteis");
+        }
+        $carrier->save();
+
+        return $this->isFreeShipping($this->getCartTotal($cart)) ? 0 : $bestQuote->total;
+
+      } catch (\Throwable $th) {
+          return false;
+      }
     }
 
-    public function getOrderShippingCost($params, $shipping_cost)
+    public function getDeadLineFromQuote($quote)
     {
-        $controller = $this->getHookController('getOrderShippingCost');
-        return $controller->run($params, $shipping_cost);
+        $deadline = Configuration::get('FC_SHIPPING_DEADLINE');
+        $deadline = !is_numeric($deadline) ? 0 : ((int) $deadline);
+
+        $retrieve = (int) $quote->retrieveDeadline;
+
+        $delivery = (int) $quote->deliveryDeadline;
+
+        return $retrieve + $delivery + $deadline;
+    }
+
+    public function getProductsCategories($cart): string
+    {
+        $categories = [];
+        foreach ($cart->getProducts() as $product) {
+            $categories[] = ucfirst(strtolower($product['category']));
+        }
+        return implode(',', array_unique($categories));
+    }
+
+    public function getCartTotal($cart)
+    {
+        $total = 0;
+        foreach ($cart->getProducts() as $product) {
+            $total += $product['total_wt'];
+        }
+        return $total;
     }
 
     public function getOrderShippingCostExternal($params)
@@ -667,106 +727,79 @@ class Freteclick extends CarrierModule
 
     public function loadDeliveryAddress($addressId)
     {
-        $address     = new Address($addressId);
-        $destination = $this->getAddressByPostalcode($address->postcode);
+      $address     = new Address($addressId);
+      $destination = $this->getAddressByPostalcode($address->postcode);
 
-        if (isset($address->number) && !empty($address->number)) {
-            $addressNumber = $address->number;
+      if (isset($address->vat_number) && !empty($address->vat_number)) {
+        $addressNumber = $address->vat_number;
+      }
+      else {
+        $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
+        if (empty($addressNumber)) {
+          $addressNumber = '1';
         }
-        else {
-            $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
-            if (empty($addressNumber))
-                $addressNumber = '1';
-        }
+      }
 
-        return [
-            'country'     => $destination->country,
-            'state'       => $destination->state,
-            'city'        => $destination->city,
-            'district'    => $destination->district,
-            'street'      => $destination->street,
-            'number'      => $addressNumber,
-            'postal_code' => $destination->id,
-            'address'     => $destination->description,
-        ];
+      return [
+        'country'     => $destination->country,
+        'state'       => $destination->state,
+        'city'        => $destination->city,
+        'district'    => $destination->district,
+        'street'      => $destination->street,
+        'number'      => $addressNumber,
+        'postal_code' => $destination->id,
+        'address'     => $destination->description
+      ];
     }
 
     public function loadRetrieveAddress()
     {
-        return [
-            'country'     => Configuration::get('FC_COUNTRY_ORIGIN'),
-            'state'       => Configuration::get('FC_STATE_ORIGIN'),
-            'city'        => Configuration::get('FC_CITY_ORIGIN'),
-            'district'    => Configuration::get('FC_DISTRICT_ORIGIN'),
-            'street'      => Configuration::get('FC_STREET_ORIGIN'),
-            'number'      => Configuration::get('FC_NUMBER_ORIGIN'),
-            'postal_code' => preg_replace('/[^0-9]/', '', Configuration::get('FC_CEP_ORIGIN')),
-            'address'     => Configuration::get('FC_STREET_ORIGIN'),
-            'complement'  => Configuration::get('FC_COMPLEMENT_ORIGIN'),
-        ];
+      return [
+        'country'     => Configuration::get('FC_COUNTRY_ORIGIN'),
+        'state'       => Configuration::get('FC_STATE_ORIGIN'),
+        'city'        => Configuration::get('FC_CITY_ORIGIN'),
+        'district'    => Configuration::get('FC_DISTRICT_ORIGIN'),
+        'street'      => Configuration::get('FC_STREET_ORIGIN'),
+        'number'      => Configuration::get('FC_NUMBER_ORIGIN'),
+        'postal_code' => preg_replace('/[^0-9]/', '', Configuration::get('FC_CEP_ORIGIN')),
+        'address'     => Configuration::get('FC_STREET_ORIGIN'),
+        'complement'  => Configuration::get('FC_COMPLEMENT_ORIGIN'),
+      ];
     }
 
     public function hookDisplayProductAdditionalInfo($params)
     {
-        $product          = new Product((int)Tools::getValue('id_product'));
-        $product_carriers = $product->getCarriers();
+      if (Configuration::get('FC_INFO_PROD') != '1') {
+        return false;
+      }
 
-        $num_car = count($product_carriers);
-        $fc_is_active = $num_car == 0 ? true : false;
+      $this->context->smarty->assign('url_shipping_quote', $this->context->link->getModuleLink('freteclick', 'calcularfrete'));
+      $this->context->smarty->assign('cep'               , $this->cookie->cep);
 
-        $smarty = $this->context->smarty;
-
-        if (Configuration::get('FC_INFO_PROD') != '1' || !$fc_is_active) {
-            return false;
-        }
-
-        $smarty->assign('cep_origin', Configuration::get('FC_CEP_ORIGIN'));
-        $smarty->assign('street_origin', Configuration::get('FC_STREET_ORIGIN'));
-        $smarty->assign('number_origin', Configuration::get('FC_NUMBER_ORIGIN'));
-        $smarty->assign('complement_origin', Configuration::get('FC_COMPLEMENT_ORIGIN'));
-        $smarty->assign('district_origin', Configuration::get('FC_DISTRICT_ORIGIN'));
-        $smarty->assign('city_origin', Configuration::get('FC_CITY_ORIGIN'));
-        $smarty->assign('state_origin', Configuration::get('FC_STATE_ORIGIN'));
-        $smarty->assign('country_origin', Configuration::get('FC_COUNTRY_ORIGIN'));
-        $smarty->assign('url_shipping_quote', $this->context->link->getModuleLink('freteclick', 'calcularfrete'));
-        $smarty->assign('url_city_destination', $this->context->link->getModuleLink('freteclick', 'citydestination'));
-        $smarty->assign('url_city_origin', $this->context->link->getModuleLink('freteclick', 'cityorigin'));
-        $smarty->assign('cep', $this->cookie->cep);
-
-        return $this->context->smarty->fetch('module:freteclick/views/templates/hook/simularfrete.tpl');
+      return $this->context->smarty->fetch('module:freteclick/views/templates/hook/simularfrete.tpl');
     }
 
-    public function hookdisplayShoppingCartFooter($params)
+    public function hookDisplayShoppingCartFooter($params)
     {
-        $langID    = $this->context->language->id;
-        $products  = Context::getContext()->cart->getProducts();
-        $prod_name = false;
+        $langID     = $this->context->language->id;
+        $products   = Context::getContext()->cart->getProducts();
+        $prod_name  = false;
+        $categories = [];
 
-        foreach ($products as $key => $prod) {
-            $product = new Product((int)$prod["id_product"], false, $langID);
-            if (!$prod_name) {
-                $prod_name = $product->name;
-            }
+        foreach ($products as $prod) {
+          $product      = new Product((int) $prod["id_product"], false, $langID);
+          $categories[] = ucfirst(strtolower($product->category));
         }
-
-        $smarty = $this->smarty;
+        $prod_name = implode(',', array_unique($categories));
 
         if (Configuration::get('FC_SHOP_CART') != '1') {
             return false;
         }
 
-        $smarty->assign('products', $products);
-        $smarty->assign('cep_origin', Configuration::get('FC_CEP_ORIGIN'));
-        $smarty->assign('street_origin', Configuration::get('FC_STREET_ORIGIN'));
-        $smarty->assign('number_origin', Configuration::get('FC_NUMBER_ORIGIN'));
-        $smarty->assign('complement_origin', Configuration::get('FC_COMPLEMENT_ORIGIN'));
-        $smarty->assign('district_origin', Configuration::get('FC_DISTRICT_ORIGIN'));
-        $smarty->assign('city_origin', Configuration::get('FC_CITY_ORIGIN'));
-        $smarty->assign('state_origin', Configuration::get('FC_STATE_ORIGIN'));
-        $smarty->assign('country_origin', Configuration::get('FC_COUNTRY_ORIGIN'));
-        $smarty->assign('url_shipping_quote', $this->context->link->getModuleLink('freteclick', 'calcularfrete'));
-        $smarty->assign('cep', $this->cookie->cep);
-        $smarty->assign('product_name', $prod_name);
+        $this->context->smarty->assign('products'          , $products);
+        $this->context->smarty->assign('url_shipping_quote', $this->context->link->getModuleLink('freteclick', 'calcularfrete'));
+        $this->context->smarty->assign('cep'               , $this->cookie->cep);
+        $this->context->smarty->assign('product_name'      , $prod_name);
 
         return $this->display(__FILE__, 'views/templates/hook/simularfrete_cart.tpl');
     }
@@ -879,19 +912,24 @@ class Freteclick extends CarrierModule
       $shippingNumber = $params['order']->getWsShippingNumber();
 
       if (empty($shippingNumber)) {
-        $order = $this->getLastStoredSimulation();
+        $orderCart  = new Cart($params['order']->id_cart);
+        $simulation = $this->getCartSimulation($orderCart);
 
-        if (!empty($order)) {
-          if ($order->quotes) {
-            $shippingNumber = $order->id;
+        if (!empty($simulation)) {
+          if ($simulation->quotes) {
+            $shippingNumber = $simulation->id;
 
-            $quotes = $this->orderByPrice($order->quotes);
+            $quotes = $this->orderByPrice($simulation->quotes);
             if (isset($quotes[0])) {
               $shippingNumber .= '-' . $quotes[0]->id;
             }
 
             $params['order']->setWsShippingNumber($shippingNumber);
             $params['order']->save();
+
+            // clear cart cache
+
+            $this->clearCartCache($orderCart);
           }
         }
       }
@@ -908,121 +946,183 @@ class Freteclick extends CarrierModule
 
     public function quote($data)
     {
-        try {
-            session_start();
-
-            $this->cookie->fc_cep = $data->destination->cep;
-
-            $_SESSION['cep'] = $data->destination->cep;
-
-            if (!isset($data->destination)) {
-                throw new Exception('Estão faltando os dados de destino');
-            }
-
-            $destination = $this->getAddressByPostalcode($data->destination->cep);
-
-            if ($destination === null) {
-                throw new Exception('CEP não encontrado');
-            }
-
-            $data->destination->city    = $destination->city;
-            $data->destination->country = $destination->country;
-            $data->destination->state   = $destination->state;
-
-            if ($data->productType === '') {
-                $data->productType = 'Material de Escritório';
-            }
-
-            $payload = [
-                'origin'            => [
-                    'city'    => $data->origin->city,
-                    'country' => $data->origin->country,
-                    'state'   => $data->origin->state,
-                ],
-                'destination'       => [
-                    'city'    => $data->destination->city,
-                    'country' => $data->destination->country,
-                    'state'   => $data->destination->state,
-                ],
-                'productTotalPrice' => $data->productTotalPrice,
-                'packages'          => $data->packages,
-                'productType'       => $data->productType,
-                "contact"           => null
-            ];
-
-            if (($result = $this->getStoredSimulation($payload)) === null)
-                $result = $this->getQuoteSimulation($payload);
-
-            $arrJson = $this->orderByPrice($result);
-
-            if (!$this->cookie->fc_valorFrete) {
-                $this->cookie->fc_valorFrete = $arrJson->quotes[0]->total;
-            }
-
-            $context = Context::getContext();
-            $id_lang = $context->language->id;
-
-            $carriers = Carrier::getCarriers($id_lang, true, false, false, null,
-                PS_CARRIERS_AND_CARRIER_MODULES_NEED_RANGE);
-
-            $this->cookie->fc_order_id = $arrJson->id;
-
-            foreach ($arrJson->quotes as $key => $quote) {
-                $quote_price = number_format($quote->total, 2, ',', '.');
-                $arrJson->quotes[$key]->raw_total = $quote->total;
-                $arrJson->quotes[$key]->total     = "R$ {$quote_price}";
-
-                $count = 0;
-                foreach ($carriers as $carrier) {
-                    if ($carrier['name'] === $quote->carrier->name) {
-                        $count++;
-                    }
-                }
-            }
-
-            $this->cookie->fc_valorFrete = $arrJson->quotes[0]->raw_total;
-
-            return json_encode([
-                'response' => [
-                    'success' => true,
-                    'data'    => $arrJson
-                ]
-            ]);
+      try {
+        if (!isset($data->destination)) {
+            throw new Exception('Estão faltando os dados de destino');
         }
-        catch (Exception $ex) {
-            return json_encode([
-                'response' => [
-                    'success' => false,
-                    'error'   => $ex->getMessage()
-                ]
-            ]);
-        }
+
+        $simulation = $this->getQuoteSimulation([
+          'cart'        => Context::getContext()->cart,
+          'total'       => $data->productTotalPrice,
+          'packages'    => $data->packages,
+          'categories'  => $data->productType,
+          'destination' => $data->destination->cep,
+        ]);
+
+        return json_encode([
+          'response' => [
+              'success' => true,
+              'data'    => $simulation,
+          ]
+        ]);
+      }
+      catch (Exception $ex) {
+        return json_encode([
+            'response' => [
+                'success' => false,
+                'error'   => $ex->getMessage()
+            ]
+        ]);
+      }
     }
 
-    public function getStoredSimulation(array $requestPayload)
+    public function getCartPackages($cart)
     {
-        $quoteMD5 = md5(json_encode($requestPayload));
-        if (isset($_SESSION[$quoteMD5]))
-            return $_SESSION[$quoteMD5];
-        return null;
+      $packages = [];
+
+      foreach ($cart->getProducts() as $product) {
+        $packages[] = [
+          "qtd"    => ((float) $product['quantity']),
+          "weight" => ((float) $product['weight'  ]),
+          "height" => ((float) $product['height'  ]) / 100,
+          "width"  => ((float) $product['width'   ]) / 100,
+          "depth"  => ((float) $product['depth'   ]) / 100
+        ];
+      }
+
+      return $packages;
     }
 
-    public function getLastStoredSimulation()
+    public function getSimulationId(array $payload)
+    {
+      $data = [
+        'origin'      => $payload['origin'],
+        'destination' => $payload['destination'],
+        'packages'    => $payload['packages']
+      ];
+
+      return md5(json_encode($data));
+    }
+
+    public function getCartSimulation($cart)
     {
       if (!isset($_SESSION)) {
           session_start();
       }
 
-      if (isset($_SESSION['lastQuote'])) {
-        return $_SESSION[$_SESSION['lastQuote']];
+      if (!empty($cart->id)) {
+        $cartId = md5('cart'.$cart->id);
+
+        if (isset($_SESSION[$cartId])) {
+          $simulationId = $_SESSION[$cartId];
+
+          if (isset($_SESSION[$simulationId])) {
+            return $_SESSION[$simulationId];
+          }
+        }
       }
 
       return null;
     }
 
+    public function clearCartCache($cart)
+    {
+      if (!isset($_SESSION)) {
+        session_start();
+      }
+
+      $cartId  = md5('cart'.$cart->id);
+      $quoteId = $_SESSION[$cartId];
+
+      unset($_SESSION[$cartId ]);
+      unset($_SESSION[$quoteId]);
+
+      return true;
+    }
+
     public function getQuoteSimulation(array $data)
     {
-        return $this->Quote->simulate($data);
+      if (!isset($_SESSION)) {
+          session_start();
+      }
+
+      $destination = $this->getAddressByPostalcode($data['destination']);
+      if ($destination === null) {
+        throw new Exception('CEP não encontrado');
+      }
+
+      $payload = [
+        'productTotalPrice' => $data['total'],
+        'packages'          => $data['packages'],
+        'productType'       => $data['categories'],
+        'destination'       => [
+          'city'    => $destination->city,
+          'state'   => $destination->state,
+          'country' => $destination->country
+        ],
+        'origin'            => [
+          'city'    => Configuration::get('FC_CITY_ORIGIN'),
+          'state'   => Configuration::get('FC_STATE_ORIGIN'),
+          'country' => Configuration::get('FC_COUNTRY_ORIGIN')
+        ]
+      ];
+
+      $simulationId = $this->getSimulationId($payload);
+
+      // save simulation reference in cart
+
+      if (isset($data['cart']) && !empty($data['cart']->id)) {
+        $_SESSION[md5('cart'.$data['cart']->id)] = $simulationId;
+      }
+
+      if (isset($_SESSION[$simulationId])) {
+        return $_SESSION[$simulationId];
+      }
+
+      // set shop owner as pickup
+
+      $owner = $this->People->getMe();
+      if (isset($owner->companyId) && isset($owner->peopleId)) {
+        $payload['pickup'] = [
+          'people'  => $owner->companyId,
+          'address' => preg_replace('/[^0-9]/', '', Configuration::get('FC_CEP_ORIGIN')),
+          'contact' => $owner->peopleId,
+        ];
+      }
+
+      // set customer as delivery
+
+      if (isset($data['cart']) && !empty($data['cart']->id_customer)) {
+        $customer = new Customer($data['cart']->id_customer);
+        $address  = new Address($data['cart']->id_address_delivery);
+
+        if (!empty($customer->email)) {
+          $customerId = $this->People->getIdByEmail($customer->email);
+          $deliveryTo = $this->loadDeliveryAddress($address->id);
+
+          if ($customerId === null) {
+            $payload = [
+              'name'    => $customer->firstname,
+              'alias'   => $customer->lastname,
+              'type'    => 'F',
+              'email'   => $customer->email,
+              'address' => $deliveryTo
+            ];
+            $customerId = $this->People->createCustomer($payload);
+            if ($customerId === null) {
+              throw new \Exception('Customer was not created');
+            }
+          }
+
+          $payload['delivery'] = [
+            'people'  => $customerId,
+            'address' => preg_replace('/[^0-9]/', '', $address->postcode),
+            'contact' => $customerId,
+          ];
+        }
+      }
+
+      return $_SESSION[$simulationId] = $this->Quote->simulate($payload);
     }
 
     public function getTransportadoras($postFields)

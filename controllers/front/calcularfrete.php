@@ -7,9 +7,9 @@
 
 class FreteclickCalcularfreteModuleFrontController extends ModuleFrontController
 {
-    public function initContent()
-    {
-        echo $this->module->quote(json_decode(file_get_contents('php://input'), false));
-		exit;
-    }
+  public function initContent()
+  {
+    echo $this->module->quote(json_decode(file_get_contents('php://input'), false));
+    exit;
+  }
 }

@@ -1042,87 +1042,100 @@ class Freteclick extends CarrierModule
 
     public function getQuoteSimulation(array $data)
     {
-      if (!isset($_SESSION)) {
+      try {
+
+        if (!isset($_SESSION)) {
           session_start();
-      }
+        }
 
-      $destination = $this->getAddressByPostalcode($data['destination']);
-      if ($destination === null) {
-        throw new Exception('CEP não encontrado');
-      }
+        $destination = $this->getAddressByPostalcode($data['destination']);
+        if ($destination === null) {
+          throw new Exception('CEP não encontrado');
+        }
 
-      $payload = [
-        'productTotalPrice' => $data['total'],
-        'packages'          => $data['packages'],
-        'productType'       => $data['categories'],
-        'destination'       => [
-          'city'    => $destination->city,
-          'state'   => $destination->state,
-          'country' => $destination->country
-        ],
-        'origin'            => [
-          'city'    => Configuration::get('FC_CITY_ORIGIN'),
-          'state'   => Configuration::get('FC_STATE_ORIGIN'),
-          'country' => Configuration::get('FC_COUNTRY_ORIGIN')
-        ]
-      ];
-
-      $simulationId = $this->getSimulationId($payload);
-
-      // save simulation reference in cart
-
-      if (isset($data['cart']) && !empty($data['cart']->id)) {
-        $_SESSION[md5('cart'.$data['cart']->id)] = $simulationId;
-      }
-
-      if (isset($_SESSION[$simulationId])) {
-        return $_SESSION[$simulationId];
-      }
-
-      // set shop owner as pickup
-
-      $owner = $this->People->getMe();
-      if (isset($owner->companyId) && isset($owner->peopleId)) {
-        $payload['pickup'] = [
-          'people'  => $owner->companyId,
-          'address' => preg_replace('/[^0-9]/', '', Configuration::get('FC_CEP_ORIGIN')),
-          'contact' => $owner->peopleId,
+        $payload = [
+          'productTotalPrice' => $data['total'],
+          'packages'          => $data['packages'],
+          'productType'       => $data['categories'],
+          'destination'       => [
+            'city'    => $destination->city,
+            'state'   => $destination->state,
+            'country' => $destination->country
+          ],
+          'origin'            => [
+            'city'    => Configuration::get('FC_CITY_ORIGIN'),
+            'state'   => Configuration::get('FC_STATE_ORIGIN'),
+            'country' => Configuration::get('FC_COUNTRY_ORIGIN')
+          ]
         ];
-      }
 
-      // set customer as delivery
+        $simulationId = $this->getSimulationId($payload);
 
-      if (isset($data['cart']) && !empty($data['cart']->id_customer)) {
-        $customer = new Customer($data['cart']->id_customer);
-        $address  = new Address($data['cart']->id_address_delivery);
+        // always save last simulation request in cart
 
-        if (!empty($customer->email)) {
-          $customerId = $this->People->getIdByEmail($customer->email);
-          $deliveryTo = $this->loadDeliveryAddress($address->id);
+        if (isset($data['cart']) && !empty($data['cart']->id)) {
+          $_SESSION[md5('cart'.$data['cart']->id)] = $simulationId;
+        }
 
-          if ($customerId === null) {
-            $payload = [
-              'name'    => $customer->firstname,
-              'alias'   => $customer->lastname,
-              'type'    => 'F',
-              'email'   => $customer->email,
-              'address' => $deliveryTo
-            ];
-            $customerId = $this->People->createCustomer($payload);
-            if ($customerId === null) {
-              throw new \Exception('Customer was not created');
-            }
-          }
+        if (isset($_SESSION[$simulationId])) {
+          return $_SESSION[$simulationId];
+        }
 
-          $payload['delivery'] = [
-            'people'  => $customerId,
-            'address' => preg_replace('/[^0-9]/', '', $address->postcode),
-            'contact' => $customerId,
+        // set shop owner as pickup
+
+        $owner = $this->People->getMe();
+        if (isset($owner->companyId) && isset($owner->peopleId)) {
+          $payload['pickup'] = [
+            'people'  => $owner->companyId,
+            'address' => $this->loadRetrieveAddress(),
+            'contact' => $owner->peopleId,
           ];
         }
-      }
 
-      return $_SESSION[$simulationId] = $this->Quote->simulate($payload);
+        // set customer as delivery
+
+        if (isset($data['cart']) && !empty($data['cart']->id_customer)) {
+          $customer = new Customer($data['cart']->id_customer);
+          $address  = new Address($data['cart']->id_address_delivery);
+
+          if (!empty($customer->email)) {
+            $customerId = $this->People->getIdByEmail($customer->email);
+            $deliveryTo = $this->loadDeliveryAddress($address->id);
+
+            if ($customerId === null) {
+              $customerId = $this->People->createCustomer([
+                'name'    => $customer->firstname,
+                'alias'   => $customer->lastname,
+                'type'    => 'F',
+                'email'   => $customer->email,
+                'address' => $deliveryTo
+              ]);
+
+              if ($customerId === null) {
+                throw new \Exception('Customer was not created');
+              }
+            }
+
+            $payload['delivery'] = [
+              'people'  => $customerId,
+              'address' => $deliveryTo,
+              'contact' => $customerId,
+            ];
+          }
+        }
+
+        $simulation = $this->Quote->simulate($payload);
+
+        return $_SESSION[$simulationId] = $simulation;
+
+      } catch (\Exception $e) {
+
+        if (empty($data['cart']->id) === false) {
+          $this->clearCartCache($data['cart']);
+        }
+
+        throw new \Exception($e->getMessage());
+      }
     }
 
     public function getTransportadoras($postFields)

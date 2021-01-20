@@ -730,13 +730,26 @@ class Freteclick extends CarrierModule
       $address     = new Address($addressId);
       $destination = $this->getAddressByPostalcode($address->postcode);
 
-      if (isset($address->vat_number) && !empty($address->vat_number)) {
+      if (!empty($address->vat_number)) {
         $addressNumber = $address->vat_number;
       }
       else {
         $addressNumber = preg_replace('/[^0-9]/', '', $address->address1);
         if (empty($addressNumber)) {
           $addressNumber = '1';
+        }
+      }
+
+      if (empty($destination->district)) {
+        $destination->district = '[CEP SEM BAIRRO]';
+      }
+
+      if (empty($destination->street)) {
+        if (!empty($address->address1)) {
+          $destination->street = $address->address1;
+        }
+        else {
+          $destination->street = '[CEP SEM RUA]';
         }
       }
 

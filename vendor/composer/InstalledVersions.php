@@ -24,24 +24,24 @@ class InstalledVersions
 private static $installed = array (
   'root' => 
   array (
-    'pretty_version' => '1.0.0+no-version-set',
-    'version' => '1.0.0.0',
+    'pretty_version' => 'dev-master',
+    'version' => 'dev-master',
     'aliases' => 
     array (
     ),
-    'reference' => NULL,
+    'reference' => '7516572df52592a4938ecc4a3ae6a41c66ee195b',
     'name' => 'freteclick/freteclick',
   ),
   'versions' => 
   array (
     'freteclick/freteclick' => 
     array (
-      'pretty_version' => '1.0.0+no-version-set',
-      'version' => '1.0.0.0',
+      'pretty_version' => 'dev-master',
+      'version' => 'dev-master',
       'aliases' => 
       array (
       ),
-      'reference' => NULL,
+      'reference' => '7516572df52592a4938ecc4a3ae6a41c66ee195b',
     ),
     'freteclick/sdk' => 
     array (

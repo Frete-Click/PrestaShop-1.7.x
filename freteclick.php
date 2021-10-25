@@ -55,7 +55,7 @@ class Freteclick extends CarrierModule
 
         $this->name    = 'freteclick';
         $this->tab     = 'shipping_logistics';
-        $this->version = '2.0.3';
+        $this->version = '2.0.7';
         $this->author  = 'Frete Click';
 
         $this->displayName = $this->l('Frete Click');
@@ -194,14 +194,7 @@ class Freteclick extends CarrierModule
 
     public function hookActionFrontControllerSetMedia()
     {
-        $this->context->controller->registerStylesheet(
-            'freteclick-style',
-            $this->_path . 'views/css/front.css',
-            [
-                'media'    => 'all',
-                'priority' => 1000,
-            ]
-        );
+        $this->context->controller->addCSS($this->_path.'views/css/front.css');
     }
 
     /**

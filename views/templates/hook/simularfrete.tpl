@@ -47,7 +47,7 @@
     }
 
     function addRowTableFrete(nomeServico, imgLogo, deadline, valorServico) {
-        return '<tr><td><img src="https://' + imgLogo.replace('api', 'app') + '" alt="' + nomeServico + '" title="' + nomeServico + '" width = "180" /> <br/><p style="margin:5px 0 0 0;text-align:center"> ' + nomeServico + ' </p></td><td style="vertical-align: middle;text-align: center;">Entrega em ' + deadline + ' dia(s)<br/>' + formatter.format(valorServico) + ' </td></tr>';
+        return '<tr><td><img src="https://' + imgLogo + '" alt="' + nomeServico + '" title="' + nomeServico + '" width = "180" /> <br/><p style="margin:5px 0 0 0;text-align:center"> ' + nomeServico + ' </p></td><td style="vertical-align: middle;text-align: center;">Entrega em ' + deadline + ' dia(s)<br/>' + formatter.format(valorServico) + ' </td></tr>';
     }
 
     function addRowError(message) {

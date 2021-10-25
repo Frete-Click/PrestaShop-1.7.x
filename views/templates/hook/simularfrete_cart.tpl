@@ -57,7 +57,7 @@
     }
 
     function addRowTableFrete(nomeServico, imgLogo, deadline, valorServico) {
-        return '<tr><td><img src="https://' + imgLogo.replace('api', 'app') + '" alt="' + nomeServico + '" title="' + nomeServico + '" width = "180" /> <br/><p> ' + nomeServico + ' </p></td><td> Entrega em ' + deadline + ' dia(s) <br/> ' + formatter.format(valorServico) + ' </td></tr>';
+        return '<tr><td><img src="https://' + imgLogo + '" alt="' + nomeServico + '" title="' + nomeServico + '" width = "180" /> <br/><p> ' + nomeServico + ' </p></td><td> Entrega em ' + deadline + ' dia(s) <br/> ' + formatter.format(valorServico) + ' </td></tr>';
     }
 
     document.getElementById("calcular_frete").addEventListener("submit", function(event) {

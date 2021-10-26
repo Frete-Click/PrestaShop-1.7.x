@@ -1,7 +1,7 @@
 {*
  * Módulo de fretes usando a API do FreteClick
  *  @author    Marcelo Almeida (contato@marceloalmeida.dev)
- *  @copyright 2010-2020 FreteClick
+ *  @copyright 2010-2021 Frete Click
  *}
 {if $carrier_checked eq $fc_carrier_id}
   <div class="box">

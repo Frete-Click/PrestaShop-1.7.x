@@ -2,8 +2,8 @@
 <module>
 	<name>freteclick</name>
 	<displayName><![CDATA[Frete Click]]></displayName>
-	<version><![CDATA[1.0.0]]></version>
-	<description><![CDATA[A Frete Click Module]]></description>
+	<version><![CDATA[2.0.7]]></version>
+	<description><![CDATA[Calculation of freight via carriers by the API Frete Click.]]></description>
 	<author><![CDATA[Frete Click]]></author>
 	<tab><![CDATA[shipping_logistics]]></tab>
 	<is_configurable>1</is_configurable>

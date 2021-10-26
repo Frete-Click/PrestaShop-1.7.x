@@ -1,7 +1,10 @@
 <?php
 /**
-* 2007-2020 PrestaShop
-*/
+ *  @author    Marcelo Almeida (contato@marceloalmeida.dev)
+ *  @copyright 2010-2021 Frete Click
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0) 
+ */
+
 $sql = array();
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'freteclick` (

@@ -1,3 +1,3 @@
 /**
-* 2007-2020 PrestaShop
+* @copyright 2010-2021 Frete Click
 */

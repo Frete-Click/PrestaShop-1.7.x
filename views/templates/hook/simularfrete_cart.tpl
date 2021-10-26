@@ -41,6 +41,10 @@
 </div>
 
 <script>
+    /**
+    * @copyright 2010-2021 Frete Click
+    */
+
     var formatter = new Intl.NumberFormat('pt-BR', {
       style   : 'currency',
       currency: 'BRL',

@@ -1,4 +1,10 @@
 <?php
+/**
+ *  @author    Frete Click (contato@freteclick.com.br)
+ *  @copyright 2010-2021 Frete Click
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0) 
+ */
+
 require_once(dirname(__FILE__).'/vendor/autoload.php');
 
 use PrestaShop\PrestaShop\Core\Addon\Module\ModuleManagerBuilder;
@@ -59,7 +65,7 @@ class Freteclick extends CarrierModule
         $this->author  = 'Frete Click';
 
         $this->displayName = $this->l('Frete Click');
-        $this->description = $this->l('Cálculo de fretes via transportadoras pela API da Frete Click.');
+        $this->description = $this->l('Calculation of freight via carriers by the API Frete Click.');
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -68,7 +74,7 @@ class Freteclick extends CarrierModule
 
         parent::__construct();
 
-        $this->confirmUninstall = $this->l('Confirma a desinstalação do módulo Frete Click?');
+        $this->confirmUninstall = $this->l('Do you confirm the uninstallation of the Freight Click module?');
 
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
 
@@ -444,7 +450,7 @@ class Freteclick extends CarrierModule
       }
 
       $address = new Address($cart->id_address_delivery);
-      if (strlen($address->postcode) < 8) {
+      if (Tools::strlen($address->postcode) < 8) {
         return false;
       }
 
@@ -490,7 +496,7 @@ class Freteclick extends CarrierModule
     {
         $categories = [];
         foreach ($cart->getProducts() as $product) {
-            $categories[] = ucfirst(strtolower($product['category']));
+            $categories[] = Tools::ucfirst(Tools::strtolower($product['category']));
         }
         return implode(',', array_unique($categories));
     }
@@ -794,7 +800,7 @@ class Freteclick extends CarrierModule
 
         foreach ($products as $prod) {
           $product      = new Product((int) $prod["id_product"], false, $langID);
-          $categories[] = ucfirst(strtolower($product->category));
+          $categories[] = Tools::ucfirst(Tools::strtolower($product->category));
         }
         $prod_name = implode(',', array_unique($categories));
 
@@ -945,7 +951,7 @@ class Freteclick extends CarrierModule
     {
         $arrProductsName = array();
         foreach ($this->context->cart->getProducts() as $product) {
-            $arrProductsName[] = ucfirst(strtolower($product['category']));
+            $arrProductsName[] = Tools::ucfirst(Tools::strtolower($product['category']));
         }
         return implode(",", array_unique($arrProductsName));
     }

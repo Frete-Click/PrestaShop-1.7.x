@@ -2,7 +2,7 @@
 /**
  *  Módulo para o calculo do frete usando o webservice do FreteClick
  *  @author    Ederson Ferreira (ederson.dev@gmail.com)
- *  @copyright 2010-2020 FreteClick
+ *  @copyright 2010-2021 Frete Click
  *  @license   LICENSE
  */
  

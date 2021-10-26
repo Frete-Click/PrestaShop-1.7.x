@@ -2,5 +2,8 @@
     "name": "freteclick/freteclick",
     "require": {
         "freteclick/sdk": "1.2.15"
+    },
+    "config": {
+        "prepend-autoloader": false
     }
 }
